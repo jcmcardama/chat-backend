@@ -1,0 +1,308 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Real-Time Chat Backend API",
+    "version": "1.0.0",
+    "description": "Comprehensive REST API documentation for the real-time chat platform. Handles user profiles, message delivery pipelines, channel authorizations, and group roster configurations."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    { "name": "Users", "description": "Core profile configurations and nested active chat lists" },
+    { "name": "Groups", "description": " Roster management, creation, and channel settings" },
+    { "name": "Messages", "description": "Secure historical message dispatch and retrieval logs" }
+  ],
+  "paths": {
+    "/api/users": {
+      "post": {
+        "summary": "Create a new user account",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username"],
+                "properties": {
+                  "username": { "type": "string", "example": "alice_dev" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created - User profile generated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "description": "Bad Request - Username parameter missing" },
+          "409": { "description": "Conflict - Username is already taken" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "get": {
+        "summary": "Retrieve all registered users",
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "Success - List of users ordered by creation date", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } } },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "summary": "Get user profile details by ID",
+        "tags": ["Users"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - Profile details returned", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "description": "Bad Request - User ID missing" },
+          "404": { "description": "Not Found - User does not exist" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "patch": {
+        "summary": "Update user profile username",
+        "tags": ["Users"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username"],
+                "properties": { "username": { "type": "string", "example": "alice_updated" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success - Profile modification updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "description": "Bad Request - ID or missing body attributes" },
+          "404": { "description": "Not Found - Profile context does not exist" },
+          "409": { "description": "Conflict - New username already occupied" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a user account",
+        "tags": ["Users"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - User completely purged from record system" },
+          "404": { "description": "Not Found - Profile missing or previously deleted" }
+        }
+      }
+    },
+    "/api/users/{id}/groups": {
+      "get": {
+        "summary": "Get list of groups the user belongs to",
+        "tags": ["Users"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - Returns light group metadata models matching array criteria" }
+        }
+      }
+    },
+    "/api/users/{id}/private-chats": {
+      "get": {
+        "summary": "Get unique users this user has interactive direct message histories with",
+        "tags": ["Users"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - Returns a clean list of pre-deduplicated active DM user profiles" }
+        }
+      }
+    },
+    "/api/groups": {
+      "post": {
+        "summary": "Create a new group conversation room",
+        "tags": ["Groups"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "memberIds"],
+                "properties": {
+                  "name": { "type": "string", "example": "Core Developers" },
+                  "memberIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "example": ["uuid-1", "uuid-2"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created - Group room context built with connected seeds" }
+        }
+      }
+    },
+    "/api/groups/{groupId}": {
+      "get": {
+        "summary": "Fetch static group channel profile metadata",
+        "tags": ["Groups"],
+        "parameters": [{ "name": "groupId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - Individual group metadata details mapped flat" },
+          "404": { "description": "Not Found - Target channel does not exist" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a group room channel",
+        "tags": ["Groups"],
+        "parameters": [{ "name": "groupId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - Group completely terminated" },
+          "404": { "description": "Not Found - Target channel context missing" }
+        }
+      }
+    },
+    "/api/groups/{groupId}/members": {
+      "get": {
+        "summary": "Fetch a group's complete member user profile list",
+        "tags": ["Groups"],
+        "parameters": [{ "name": "groupId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Success - Flat array containing active profile cards returned via fluent mapping" },
+          "404": { "description": "Not Found - Target channel missing" }
+        }
+      },
+      "post": {
+        "summary": "Invite/Append new member users to an existing group roster",
+        "tags": ["Groups"],
+        "parameters": [{ "name": "groupId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["memberIds"],
+                "properties": { "memberIds": { "type": "array", "items": { "type": "string" } } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success - Targets safely linked into the relational many-to-many database join table" },
+          "404": { "description": "Not Found - Target group or one of the user profiles does not exist" }
+        }
+      }
+    },
+    "/api/messages/private/{userId1}/{userId2}": {
+      "get": {
+        "summary": "Fetch historical 1-on-1 direct message ledger",
+        "tags": ["Messages"],
+        "parameters": [
+          { "name": "userId1", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "userId2", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success - Sequential chat log history array loaded chronological" }
+        }
+      }
+    },
+    "/api/messages/group/{groupId}/{userId}": {
+      "get": {
+        "summary": "Fetch group chat room conversation logs (Secure Guard Checked)",
+        "tags": ["Messages"],
+        "parameters": [
+          { "name": "groupId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success - History records compiled for safe read display" },
+          "403": { "description": "Forbidden - Access denied. Requester user profile is not a member of the group channel" }
+        }
+      }
+    },
+    "/api/messages/private": {
+      "post": {
+        "summary": "Dispatch a private 1-on-1 direct message payload",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["senderId", "receiverId", "text"],
+                "properties": {
+                  "senderId": { "type": "string", "format": "uuid" },
+                  "receiverId": { "type": "string", "format": "uuid" },
+                  "text": { "type": "string", "example": "Hey Bob, check out this update." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created - Message logged in DB and emitted to recipient's individual socket ID pipeline if active" },
+          "404": { "description": "Not Found - Sender or receiver records do not exist" }
+        }
+      }
+    },
+    "/api/messages/group": {
+      "post": {
+        "summary": "Dispatch a group message payload (Secure Guard Checked)",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["senderId", "groupId", "text"],
+                "properties": {
+                  "senderId": { "type": "string", "format": "uuid" },
+                  "groupId": { "type": "string", "format": "uuid" },
+                  "text": { "type": "string", "example": "Hello team, meeting at 10 AM." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created - Message saved and broadcasted to Socket.io room matching groupId" },
+          "403": { "description": "Forbidden - Sender user ID is not authorized as a group member" },
+          "404": { "description": "Not Found - Structural foreign profile keys missing" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "d290f1ee-6c54-4b01-90e6-d701748f0851" },
+          "username": { "type": "string", "example": "alice_dev" },
+          "createdAt": { "type": "string", "format": "date-time", "example": "2026-06-14T02:00:00.000Z" }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "c8b417df-b118-4903-bf6b-67e39efd97bb" },
+          "name": { "type": "string", "example": "Core Developers" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "fa80b27e-89c1-4541-b011-2e0618ff011a" },
+          "text": { "type": "string", "example": "Hey look at this runtime log!" },
+          "senderId": { "type": "string", "format": "uuid", "example": "d290f1ee-6c54-4b01-90e6-d701748f0851" },
+          "receiverId": { "type": "string", "format": "uuid", "nullable": true, "example": "3395637d-7133-47b9-a973-89d20037b718" },
+          "groupId": { "type": "string", "format": "uuid", "nullable": true, "example": "c8b417df-b118-4903-bf6b-67e39efd97bb" },
+          "createdAt": { "type": "string", "format": "date-time", "example": "2026-06-14T02:45:00.000Z" },
+          "sender": { "$ref": "#/components/schemas/User" }
+        }
+      }
+    }
+  }
+}
