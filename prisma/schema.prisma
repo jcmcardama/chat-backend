@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String    @id @default(uuid())
+  username         String    @unique
+  createdAt        DateTime  @default(now())
+  
+  // Relations
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  groups           Group[]   @relation("GroupMemberships")
+}
+
+model Group {
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  
+  // Relations
+  members   User[]    @relation("GroupMemberships")
+  messages  Message[]
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  text       String
+  createdAt  DateTime @default(now())
+  
+  // Foreign Keys & Relations
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  receiverId String?
+  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  groupId    String?
+  group      Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([groupId])
+}
